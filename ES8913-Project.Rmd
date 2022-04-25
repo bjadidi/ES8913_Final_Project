@@ -4,6 +4,7 @@ subtitle: "Using R to investigate powder blending in a double paddle blender via
 author: |
      Behrooz Jadidi (501001145) \
      Supervisor: Cody Ross
+url : {https://www.R-project.org/},
 date: '2022-04-17'
 header-includes:
      - \usepackage{setspace}\doublespacing
@@ -24,7 +25,6 @@ abstract: \doublespacing The flow patterns and mixing mechanisms of a double
    coefficient increased linearly. By considering the forces acting on the 
    particles, it was reported that the higher impeller rotational speed lead to 
    higher forces. 
-
 
 geometry: margin=1in
 fontsize: 12pt
@@ -102,7 +102,7 @@ knitr::include_graphics("Geometry.JPG")
 ### Effect of initial loading pattern on the mixing process
 In this section, we discuss the effects of the initial loading pattern on the mixing performance of the double paddle blender. Various initial loads were considered (e.g. Top-Bottom, Side-Side, and Front-Back). It was necessary to load 132,300 5 mm diameter particles into the mixing vessel with a diameter of 5 mm to achieve the TB initial loading pattern and 40% fill level. Following this, another 132,300 particles with a diameter of 5 mm were created in the mixer, and allowed to settle on top of the others (colored in red). There were two types of particles created, both of which had the same material properties, but they had different colors. The impellers remained stationary while the particles were generated. For 50% and 60% fill levels, 330,750 and 396,900 particles were generated respectively, using the same method. These steps were repeated to create FB and SS initial filling patterns, loading the particles in different locations. Figure \@ref(fig:ggplot1) illustrates effects of the initial filling pattern on mixing performance in the mixer. As a result, the best mixing performacne was achieved by implementing TB initial fillign pattern. 
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, warning=FALSE}
 
 rm(list=ls()) 
 
@@ -222,20 +222,172 @@ ggp
 
 ### Effect of fill level on the mixing process
 
+Fill level (particles' amount) is a vital operational parameter in various industries. Thus it is essential to investigate the effects of this parameter on the mixing behaviour in the twin paddle blender. This section examines the impact of fill level on mixing efficiency. To do so, the TB initial loading pattern with a 40 rpm case was selected. In this case, the fill level were varied from 40-60 % of the vessel volume, and the RSD values were compared in different cases. Based on what can be seen in Figure \@ref(fig:ggplot3), it can be resulted that the fill
+
+```{r ggplot3, warning=FALSE, fig.cap= "Effects of fill level on RSD values."}
+# Reshape data frame
+data_ggp <- data.frame(x = df$Time,                            
+                       y = c(df$TB_40rpm_40, df$TB_40rpm_50, df$TB_40rpm_60),
+                       group = c(rep("40 %", nrow(df)),
+                                 rep("50 %", nrow(df)),
+                                 rep("60 %", nrow(df))))
+
+# Create ggplot2 plot
+
+ggp <- ggplot(data_ggp, aes(x, y, col = group)) +             
+  geom_line()+
+  labs(x = "Time (s)",
+       y = "RSD (%)",
+       col = "Fill level")
+# Draw plot
+ggp                                                        
+ 
+```
+
 \newpage
 
 ## Mixing mechanisms and flow pattern
 
 ### Diffusivity coefficient and Peclet number
 
+Since the diffusion coefficient ($D_{ij}$) stands for the particle mass flux caused by the particles' random movement, it can be used to evaluate the diffusion in a mixing system. This important term can be calculated as:
+$$
+  D_{ij}= \frac{<(d_{x_i} - \bar{d_{x_i}}) (d_{x_j} - \bar{d_{x_j}})>}{2Dt}
+$$
+where $d_{x_i}$ stands for the particle movement in the $i$ direction, and $\bar{d_{x_j}}$ represents the mean movement of all particles in the $i$ direction during $Dt$. The $xx$, $yy$, and $zz$ components of the diffusivity coefficient were determined in this project and are reported in Table \@ref(tab:diff) for different fill levels and impeller speeds. As shown in Table \@ref(tab:diff), $D_{xx}$ is the highest diffusion coeffient in comparison to other directions. This can confirm that the maximum mixing via diffusion occured in the $xx$ direction. 
+```{r diff, echo=FALSE}
+df <- data.frame("Fill_level" = c("40 %","","", "50 %","","", "60 %","",""),
+                     "Impeller_speed" = c("10","40","70","10","40","70","10","40","70"),
+                     "Dxx" = c("0.000581","0.00232","0.003782","0.000955","0.003224","0.004929","0.001386","0.004667","0.00654"),
+                     "Dyy" = c("0.000485","0.001927","0.00383","0.000753","0.002807","0.004828","0.000949","0.003768","0.00621"), 
+                     "Dzz" = c("0.000066","0.000363", "0.000799","0.000072","0.000304","0.000673","0.000062","0.000269","0.000554"))
+
+
+knitr::kable(df, "pipe", caption = "Diffusivity coefficients in various directions and operational paramters.")
+```
+The Peclet number was calculated to determine the contribution of convection and diffusion mechanisms to particle mixing in the system and it can be calculated as following:
+$$
+  Pe = \frac{\bar{v_i}L_c}{D_{ij}}
+$$
+In the above equation, $\bar{v_i}$ stands for the particles' velocity in the direction of $i$, and $L_c$ corresponds to the characteristic length. Table \@ref(tab:Peclet) shows the Peclet number values for different directions and various operational parameters. In all the cases, the Peclet number is smaller than 1, declaring that the diffusion is the dominant mixing mechanism in the system. 
+
+```{r Peclet, echo=FALSE}
+df <- data.frame("Fill_level" = c("40 %","","", "50 %","","", "60 %","",""),
+                     "Impeller_speed" = c("10","40","70","10","40","70","10","40","70"),
+                     "Pexx" = c("0.000434","0.008105","0.005108","0.000955","0.020208","0.005425","0.000156","0.001191","0.000543"),
+                     "Peyy" = c("0.287378","0.050178","0.007771","0.026122","0.010189","0.009805","	0.180131","0.02831","0.01421"), 
+                     "Pezz" = c("0.303559",	"0.038085","0.045192","0.257036","0.138383","0.199278","0.093212","0.002946","0.002946"))
+
+
+knitr::kable(df, "pipe", caption = "Peclet number in various directions and operational paramters.")
+```
+
 ### Granular temperature
+
+Granular temperature is one of the most important macroscopic parameters, using to describe a particulate flow. It can explain the degree of random particle mobility in a system. Granular temperature can be calculated as:
+
+$$
+  T = 1/3<u'u'>
+$$
+where $u'$ stands for velocity fluctaion occurs in a grid of mesh, and $< >$ sign means the temporal averaging. Figure \@ref(fig:GT) shows the effects of the impeller rotational speed on the granular temperature in the system. As it can be seen, by increasing in the impeller rotational speed, particles' random movemenrs increased and that resulted in increasing in the granular temprature in the system.
+
+
+```{r, warning=FALSE}
+
+rm(list=ls()) 
+
+setwd("./Data_GT")
+
+cwd <- getwd()
+
+# Read Data and save them in a List
+
+file_list <- list.files(path = cwd)
+data_list <- list()
+mat = matrix(ncol = 9, nrow = 28)
+
+# converting the matrix to data 
+# frame
+df <- data.frame(mat)
+names_c <- c()
+# 
+for (i in 1:(length(file_list))){
+
+      # print(file_list[i])
+      x <- str_replace_all(file_list[i],pattern=".csv", repl="")
+      # print(x)
+
+      curr_file <- str_replace_all(string=paste("./", file_list[i]),
+                                   pattern=" ", repl="")
+
+      curr_data <- read_csv(curr_file, show_col_types = FALSE,
+                            col_names = FALSE,skip= 1)[2]
+
+      colnames(curr_data) <- c(x)
+      
+
+
+      data_list[[i]] <- curr_data
+      #print(curr_data)
+      names_c <- c(names_c, x)
+      
+}
+
+
+
+colnames(df) <- names_c
+
+for (i in 1:(length(file_list))){
+
+      # print(file_list[i])
+      x <- str_replace_all(file_list[i],pattern=".csv", repl="")
+      # print(x)
+
+      curr_file_1 <- str_replace_all(string=paste("./", file_list[i]),
+                                   pattern=" ", repl="")
+      
+      curr_data_1 <- read_csv(curr_file_1, show_col_types = FALSE,
+                              col_names = FALSE, skip= 1)[2]
+
+      colnames(curr_data_1) <- c(x)
+      
+      df[x] <- curr_data_1
+      
+}
+
+df$Zbin <- c(1:28)
+
+setwd("../")
+
+
+
+```
+```{r GT, warning=FALSE, fig.cap= "Effects of impeller rotational speed on granular temperature."}
+# Reshape data frame
+data_ggp <- data.frame(x = df$Zbin,                            
+                       y = c(df$GT_10rpm_40, df$GT_40rpm_40, df$GT_70rpm_40),
+                       group = c(rep("10 rpm", nrow(df)),
+                                 rep("40 rpm", nrow(df)),
+                                 rep("70 rpm", nrow(df))))
+
+# Create ggplot2 plot
+
+ggp <- ggplot(data_ggp, aes(x, y, col = group)) +             
+  geom_line()+
+  labs(x = "Bin number",
+       y = "GT (m2/s2)",
+       col = "Impeller rotational speed")
+# Draw plot
+ggp                                                        
+ 
+```
 
 \newpage
 
 # Conclussions
 
-An assessment of mixing performance using DEM simulations and statistical analysis was conducted. Based on the calibrated model, we investigated how the fill level, impeller speed, and initial loading pattern affect the performance of a double paddle blender. A further analysis of the flow pattern of particles in the mixing system was conducted by calculating the diffusivity coefficient, granular temperature, and Peclet number using the simulation results. In the simulation, increasing the impeller speed from 10 to 40 rpm reduced the RSD values and increased mixing for all initial loading patterns. The mixing quality of the TB initial loading pattern was improved by increasing the impeller speed from 40 to 70 rpm during the initial stage of mixing. Both the 40 rpm and 70 rpm cases showed the same RSD values at the end of the mixing process. As impeller speed was increased, particles were subjected to greater forces. According to the result of the force analysis, increasing the impeller speed increased the efficiency of the mixer, but at the same time increased the forces on each particle. In some mixing applications, this force increase can cause damage to the final product. Changing fill levels did not significantly affect mixing efficiency for all impeller speeds and initial loading patterns. A slightly higher fill level of 60% improved mixing performance with an impeller speed of 10 rpm and the TB initial loading pattern. \
-Additionally, various impeller speeds and fill levels were studied in order to determine the effect of the initial loading pattern on mixing performance. TB initial loading pattern proved to be superior to other initial loading patterns for mixing. Peclet number calculations revealed that diffusion was dominant in all cases. Moreover, the diffusivity coefficients increased in all directions as the impeller speed increased. Simulation results also confirmed that increasing impeller speed enhanced the chaotic motion of solid particles as measured by granular temperature. When impeller speed values were increased, mixing quality (lower RSD values) increased due to the effects of the diffusivity coefficient and granular temperature. The current study only applies the results to a horizontal double paddle blender with monodisperse non-cohesive spherical particles. 
+An assessment of mixing performance using DEM simulations and statistical analysis was conducted. Based on the calibrated model, we investigated how the fill level, impeller speed, and initial loading pattern affect the performance of a double paddle blender. A further analysis of the flow pattern of particles in the mixing system was conducted by calculating the diffusion coefficient, granular temperature, and Peclet number using the simulation results. In the simulation, increasing the impeller speed from 10 to 40 rpm reduced the RSD values and increased mixing for all initial loading patterns. The mixing quality of the TB initial loading pattern was improved by increasing the impeller speed from 40 to 70 rpm during the initial stage of mixing. Both the 40 rpm and 70 rpm cases showed the same RSD values at the end of the mixing process. As impeller speed was increased, particles were subjected to greater forces. According to the result of the force analysis, increasing the impeller speed increased the efficiency of the mixer, but at the same time increased the forces on each particle. In some mixing applications, this force increase can cause damage to the final product. Changing fill levels did not significantly affect mixing efficiency for all impeller speeds and initial loading patterns. A slightly higher fill level of 60% improved mixing performance with an impeller speed of 10 rpm and the TB initial loading pattern. \
+Additionally, various impeller speeds and fill levels were studied in order to determine the effect of the initial loading pattern on mixing performance. TB initial loading pattern proved to be superior to other initial loading patterns for mixing. Peclet number calculations revealed that diffusion was dominant in all cases. Moreover, the diffusion coefficients increased in all directions as the impeller speed increased. Simulation results also confirmed that increasing impeller speed enhanced the chaotic motion of solid particles as measured by granular temperature. When impeller speed values were increased, mixing quality (lower RSD values) increased due to the effects of the diffusion coefficient and granular temperature. The current study only applies the results to a horizontal double paddle blender with mono-disperse non-cohesive spherical particles. 
 
 
 \newpage
