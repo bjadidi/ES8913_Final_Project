@@ -1,0 +1,280 @@
+---
+title: "ES8913 Final Project"
+subtitle: "Using R to investigate powder blending in a double paddle blender via the Discrete Element Method (DEM)"
+author: |
+     Behrooz Jadidi (501001145) \
+     Supervisor: Cody Ross
+date: '2022-04-17'
+header-includes:
+     - \usepackage{setspace}\doublespacing
+     - \usepackage{float}
+abstract: \doublespacing The flow patterns and mixing mechanisms of a double 
+   paddle blender were analyzed using the discrete element method (DEM) and 
+   statistical analysis. Due to the lack of literature analyzing the mixing 
+   performance of this type of blender, the authors conducted this study. 
+   An experimentally measured dynamic angle of repose was used to calibrate 
+   the DEM input parameters. Mixing performance was
+   found to be strongly influenced by impeller speed and the initial loading 
+   pattern. Increasing the rpm resulted in better mixing quality due to diffusion
+   and granular temperature analysis. Mixing efficiency
+   was not affected by fill level in general. In the current mixer, 
+   diffusion is the dominant mixing mechanism as revealed by the 
+   Peclet number. It was also concluded that the diffusivity in x and y direction 
+   was bigger than z-axis. Also, by increasing the impeller speed the diffusion 
+   coefficient increased linearly. By considering the forces acting on the 
+   particles, it was reported that the higher impeller rotational speed lead to 
+   higher forces. 
+
+
+geometry: margin=1in
+fontsize: 12pt
+   
+output: 
+        bookdown::pdf_document2:
+          toc: true
+          number_sections: true
+          theme: united
+          
+---
+
+```{r, echo=FALSE, warning=FALSE}
+
+library(stringr)
+library(readr)
+library(ggplot2)
+
+```
+
+
+\newpage
+
+# Introduction
+
+The solid mixing is an essential operation in various industries, including pharmaceutical, food, and cosmetics where achieving a specific degree of mixture homogeneity is vital for the product quality control (Sebastian Escotet-Espinoza et al., 2018). In the granular mixing process, two or more particle components with different physical properties (various sizes, shapes and densities) are usually blended (Soni et al., 2016). For example, in the pharmaceutical industry, achieving uniform mixing of active pharmaceutical ingredients (API) and excipients with various sizes, shapes, and densities is crucial to prevent manufacturing sub- or super-potent capsules and tablets and to avoid any product rejection (Radl et al., 2010). Usually, due to segregation, reaching the desired homogeneous state for a solid mixture, including different particles with different physical properties, is a challenging task. Generally, in industries that deal with particle mixing, selecting an appropriate mixer with a low segregation tendency is of great importance. Although all differences in particle physical properties can cause segregation, the difference in particle sizes in a mixture is the most critical factor, which leads to segregation (Alizadeh, 2013; Alizadeh, Dubé, et al., 2013; Alizadeh, Hajhashemi, et al., 2013). \
+Various batch mixing systems are utilized in industries and among all of these mixing systems, agitated mixers are often a popular choice in industries due to their broad operational capacities  (Ebrahimi et al., 2020; Paul et al., 2004; Yaraghi et al., 2018). An agitated mixer consists of a single or double stationary vessel, positioned vertically or horizontally. Depending on the number of vessels, there are one or two impellers in the mixing systems (Cullen et al., 2015; Ebrahimi et al., 2018; Harnby et al., 1985; Yaraghi et al., 2018). Generally, the agitated mixing systems are classified based on the type of their impellers. Some commonly used types of agitated blenders are ribbon blenders (Muzzio et al., 2008), paddle blenders (Ebrahimi et al., 2020), ploughshare blenders (Laurent & Cleary, 2012) and screw blenders (Cai et al., 2019). Reviewing the literature shows that the flow patterns and mixing mechanisms of single vessel agitated blenders comprising mono-disperse, bi-disperse and poly-disperse particle mixtures have been the subject of several experimental and numerical studies (Alian et al., 2015; Boonkanokwong et al., 2016, 2018; Chandratilleke et al., 2018; Ebrahimi et al., 2018, 2020; Laurent & Cleary, 2012; Qi et al., 2017; Sakai et al., 2015; Yaraghi et al., 2018). \
+However, there are only a few studies in the literature covering the mixing performance and segregation in the agitated double vessel mixers (W. Gao et al., 2019; Hassanpour et al., 2011; Qi et al., 2017). For example, Qi et al. (Qi et al., 2017) studied the effects of operational conditions such as fill level and screw rotational speed on the mixing performance of a double screw mixer comprising non-spherical and spherical particles. They used both the DEM model and experimental results obtained from the literature (Kingston et al., 2015; Kretz et al., 2016). Mixing performance, assessed by the Lacey mixing index, was found to be influenced by the screw rotational speed only to a small extent. The mixing quality was also deteriorated by increasing the pitch length and reducing the fill level. \
+In another study, Gao et al. (W. Gao et al., 2019) investigated the effects of operational and geometrical parameters on the mixing efficiency of a double vessel ribbon blender using the DEM method. The Lacey mixing index was employed to assess the mixing quality. The authors observed that the paddle rotational speed and the initial loading pattern significantly influenced the mixing quality, while inner blades and particles’ size had a negligible effect on the degree of homogeneity. They reported that the highest mixing efficiency was achieved for the top-bottom initial loading pattern and increasing the paddle rotational speed resulted in improving the mixer’s performance. Moreover, they compared the mixing performance of the ribbon blender with various vessel geometry (single and double U-shaped vessels). It was concluded that under top-bottom and front-back initial loadings, employing a ribbon mixer with a double U-shaped vessel resulted in better mixing performance while the side-side initial loading led to poor mixing. Hassanpour et al. (Hassanpour et al., 2011) used DEM and experiments to examine mixing process in a double paddle blender. Quantitative and qualitative comparisons were made between the DEM models and the positron emission particle tracking (PEPT) experimental data. There was a slight discrepancy between the time-averaged velocities predicted by the DEM and those obtained from experiments. DEM results were able to predict the mixing patterns observed in the double paddle blender in both vertical and horizontal directions. \
+This research aims to study the performance of a double paddle blender for monodisperse spherical particles (glass beads with dp = 5 mm) using calibrated DEM simulations, considering that there are few studies in the literature on double vessel blenders. The mixer understudy has a geometry similar to those in the food and agricultural industries. This analysis was conducted using the experimental data acquired from a rotating drum 40% filled with glass beads to calibrate the model input parameters. In order to analyze the effects of the fill level, impeller speed, and initial loading pattern on the performance of a double paddle blender, a calibrated DEM model was used. To investigate the mixing quality, three levels of operating parameters were altered (as shown in Table \@ref(tab:Paramters)). \
+
+
+```{r Paramters, echo=FALSE}
+df <- data.frame("Paramters" = c("Impeller speed (rpm)", "Fill level (%)", "Initial Loading Pattern"),
+                     "Case1" = c("10","40","Top-Bottom (TB)"),
+                     "Case2" = c("40","50","Side-Side (SS)"),
+                     "Case3" = c("70","60","Front-Back (FB)"))
+
+
+knitr::kable(df, "pipe", caption = "Operating Parameters.")
+```
+
+
+\newpage
+
+# The DEM Approach
+
+In this study, simulation of solid mixing in the double paddle blender was performed using the discrete element method (DEM). Newton's equations of motion are solved as part of the DEM approach to track each particle's translational and rotational movements. If the integration's time-step is small enough, the motion of particles can be assumed to be only affected by contacts with their neighbors and the gravitational force (Norouzi et al., 2016). The soft sphere method was utilized to describe the dynamics of particles in the blender. Thus, for particle $i$ with radius $R_i$, mass $m_i$, and moment of inertia $I_i$, translational and rotational motions are expressed by the following equations (Cundall & Strack, 1979; Norouzi et al., 2016):
+
+$$
+m_i\frac{d\vec{v_i}}{dt} = \sum_{j}^{N_c}{(\vec{F^n_{ij}}+ \vec{F^t_{ij}}) + \vec{F^g_{i}}}
+$$
+$$
+I_i\frac{d\vec{w_i}}{dt} = \sum_{j}^{N_c}{(\vec{M^n_{ij}}+ \vec{M^t_{ij}}) }
+$$
+where $\vec{v_i}$ and  $\vec{w_i}$i represent the translational velocity and angular velocity of particle $i$, respectively. $\vec{F^g_{i}}$, $\vec{F^t_{ij}}$ and  $\vec{F^n_{ij}}$,  represent gravitational force, tangential contact force and normal contact force, respectively. $\vec{M^t_{ij}}$, and $\vec{M^n_{ij}}$ stand for the tangential and rolling resistance torque. $N_c$ represents the number of particles interacting with the particle $i$. 
+In this study, the Hertz-Mindlin contact model was utilized in order to calculate the contact forces of particle-particle and particle-wall interactions (Ebrahimi et al., 2018, 2020; Jadidi et al., 2022; Kloss & Goniva, 2011; Yaraghi et al., 2018). LIGGGHTS-PUBLIC v3.8.0, an open-source DEM package, was used as the DEM solver in this study. A High-Performance-Computer (Intel® Xeon(R) Gold 6154 CPU @ 3.00GHz × 72, 251.6 GB RAM) was employed to conduct the simulation runs. 24 CPUs were used to run each simulation case in this study. R-Studio  were used for post-processing and visualizing the results of the simulations. 30% of the Rayleigh time (2.887e-05 s), calculated based on the smaller particle size, was chosen as the simulations' time step as suggested in the literature (Hassanpour et al., 2011).
+
+\newpage
+
+# Mixer's Geometry
+
+The experimental setup used in this study was a ~80-liter twin-shaft paddle blender built in the Mixing Technology Research Laboratory at Ryerson University (Figure \@ref(fig:Geometry)). The mixer was composed of a double U-shaped vessel, two identical counter-rotating impellers and a motor equipped with a speed controller. The rotating shafts were installed horizontally at the centers of the double U-shaped vessels. The vessel consisted of two intersected semi-cylinders with a diameter of 0.27 m and a length of 0.55 m (Figure \@ref(fig:Geometry)). There were 12 blades positioned pairwise along the vessel length at six different axial positions (Figure \@ref(fig:Geometry)). 
+
+```{r Geometry, fig.align = "center", echo=FALSE, fig.cap="Experimental setup; (a) front view, (b) top view, (c) side view.", out.width = '80%'}
+knitr::include_graphics("Geometry.JPG")
+```
+
+\newpage
+
+# Results and discussions
+
+## Effects of operating parameters on mixing performance
+
+### Effect of initial loading pattern on the mixing process
+In this section, we discuss the effects of the initial loading pattern on the mixing performance of the double paddle blender. Various initial loads were considered (e.g. Top-Bottom, Side-Side, and Front-Back). It was necessary to load 132,300 5 mm diameter particles into the mixing vessel with a diameter of 5 mm to achieve the TB initial loading pattern and 40% fill level. Following this, another 132,300 particles with a diameter of 5 mm were created in the mixer, and allowed to settle on top of the others (colored in red). There were two types of particles created, both of which had the same material properties, but they had different colors. The impellers remained stationary while the particles were generated. For 50% and 60% fill levels, 330,750 and 396,900 particles were generated respectively, using the same method. These steps were repeated to create FB and SS initial filling patterns, loading the particles in different locations. Figure \@ref(fig:ggplot1) illustrates effects of the initial filling pattern on mixing performance in the mixer. As a result, the best mixing performacne was achieved by implementing TB initial fillign pattern. 
+
+```{r, echo=FALSE, warning=FALSE}
+
+rm(list=ls()) 
+
+setwd("./Data_RSD")
+
+cwd <- getwd()
+
+# Read Data and save them in a List
+
+file_list <- list.files(path = cwd)
+data_list <- list()
+mat = matrix(ncol = 27, nrow = 20)
+
+# converting the matrix to data 
+# frame
+df <- data.frame(mat)
+names_c <- c()
+# 
+for (i in 1:(length(file_list))){
+
+      # print(file_list[i])
+      x <- str_replace_all(file_list[i],pattern=".csv", repl="")
+      # print(x)
+
+      curr_file <- str_replace_all(string=paste("./", file_list[i]),
+                                   pattern=" ", repl="")
+
+      curr_data <- read_csv(curr_file, show_col_types = FALSE,
+                            col_names = FALSE,skip= 1)[2]
+
+      colnames(curr_data) <- c(x)
+      
+
+
+      data_list[[i]] <- curr_data
+      #print(curr_data)
+      names_c <- c(names_c, x)
+      
+}
+
+
+
+colnames(df) <- names_c
+
+for (i in 1:(length(file_list))){
+
+      # print(file_list[i])
+      x <- str_replace_all(file_list[i],pattern=".csv", repl="")
+      # print(x)
+
+      curr_file_1 <- str_replace_all(string=paste("./", file_list[i]),
+                                   pattern=" ", repl="")
+      
+      curr_data_1 <- read_csv(curr_file_1, show_col_types = FALSE,
+                              col_names = FALSE, skip= 1)[2]
+
+      colnames(curr_data_1) <- c(x)
+      
+      df[x] <- curr_data_1
+      
+}
+
+df$Time <- c(0:19)
+
+setwd("../")
+
+
+
+```
+```{r ggplot1, warning=FALSE, fig.cap= "Effects of Initial filling pattern on RSD values."}
+# Reshape data frame
+data_ggp <- data.frame(x = df$Time,                            
+                       y = c(df$FB_10rpm_40, df$TB_10rpm_40, df$SS_10rpm_40),
+                       group = c(rep("FB", nrow(df)),
+                                 rep("TB", nrow(df)),
+                                 rep("SS", nrow(df))))
+
+# Create ggplot2 plot
+
+ggp <- ggplot(data_ggp, aes(x, y, col = group)) +             
+  geom_line()+
+  labs(x = "Time (s)",
+       y = "RSD (%)",
+       col = "Initial loading pattern")
+# Draw plot
+ggp                                                        
+ 
+```
+
+
+
+
+
+### Effect of the impeller speed on the mixing process
+
+In this section, the impact of impeller speed on mixing quality is explored. To do so, since the TB initial filling pattern showed the best mixing peroformance among all the other options, the RSD values for different impeller rotational speed have been compared for TB initial loading pattern (Figure \@ref(fig:ggplot2)). Based on this figure, one can conclude that increasing the impeller rotational speed increased the mixing performance of the system at the first stage of the mixing (12 s). However, at the end of the mixing process (when the RSD values reach a steady state value), both 40 rpm and 70 rpm impeller speeds show similar mixing behaviours.
+
+```{r ggplot2, warning=FALSE, fig.cap= "Effects of impeller rotational speed on RSD values."}
+# Reshape data frame
+data_ggp <- data.frame(x = df$Time,                            
+                       y = c(df$TB_10rpm_40, df$TB_40rpm_40, df$TB_70rpm_40),
+                       group = c(rep("10 rpm", nrow(df)),
+                                 rep("40 rpm", nrow(df)),
+                                 rep("70 rpm", nrow(df))))
+
+# Create ggplot2 plot
+
+ggp <- ggplot(data_ggp, aes(x, y, col = group)) +             
+  geom_line()+
+  labs(x = "Time (s)",
+       y = "RSD (%)",
+       col = "Impeller rotational speed")
+# Draw plot
+ggp                                                        
+ 
+```
+
+### Effect of fill level on the mixing process
+
+\newpage
+
+## Mixing mechanisms and flow pattern
+
+### Diffusivity coefficient and Peclet number
+
+### Granular temperature
+
+\newpage
+
+# Conclussions
+
+An assessment of mixing performance using DEM simulations and statistical analysis was conducted. Based on the calibrated model, we investigated how the fill level, impeller speed, and initial loading pattern affect the performance of a double paddle blender. A further analysis of the flow pattern of particles in the mixing system was conducted by calculating the diffusivity coefficient, granular temperature, and Peclet number using the simulation results. In the simulation, increasing the impeller speed from 10 to 40 rpm reduced the RSD values and increased mixing for all initial loading patterns. The mixing quality of the TB initial loading pattern was improved by increasing the impeller speed from 40 to 70 rpm during the initial stage of mixing. Both the 40 rpm and 70 rpm cases showed the same RSD values at the end of the mixing process. As impeller speed was increased, particles were subjected to greater forces. According to the result of the force analysis, increasing the impeller speed increased the efficiency of the mixer, but at the same time increased the forces on each particle. In some mixing applications, this force increase can cause damage to the final product. Changing fill levels did not significantly affect mixing efficiency for all impeller speeds and initial loading patterns. A slightly higher fill level of 60% improved mixing performance with an impeller speed of 10 rpm and the TB initial loading pattern. \
+Additionally, various impeller speeds and fill levels were studied in order to determine the effect of the initial loading pattern on mixing performance. TB initial loading pattern proved to be superior to other initial loading patterns for mixing. Peclet number calculations revealed that diffusion was dominant in all cases. Moreover, the diffusivity coefficients increased in all directions as the impeller speed increased. Simulation results also confirmed that increasing impeller speed enhanced the chaotic motion of solid particles as measured by granular temperature. When impeller speed values were increased, mixing quality (lower RSD values) increased due to the effects of the diffusivity coefficient and granular temperature. The current study only applies the results to a horizontal double paddle blender with monodisperse non-cohesive spherical particles. 
+
+
+\newpage
+
+# References
+
+Alian, M., Ein-Mozaffari, F., Upreti, S.R., 2015. Analysis of the mixing of solid particles in a plowshare mixer via discrete element method (DEM). Powder Technol. 274, 77–87. https://doi.org/10.1016/j.powtec.2015.01.012 \
+Alizadeh, E., 2013. Numerical and experimental investigation of solid mixing and segregation in tumbling blenders. Ph.D. thesis, University of Montreal. \
+Alizadeh, E., Dubé, O., Bertrand, F., Chaouki, J., 2013a. Characterization of mixing and size segregation in a rotating drum by a particle tracking method. AIChE J. 59, 1894–1905. https://doi.org/10.1002/aic.13982 \
+Alizadeh, E., Hajhashemi, H., Bertrand, F., Chaouki, J., 2013b. Experimental investigation of solid mixing and segregation in a tetrapodal blender. Chem. Eng. Sci. 97, 354–365. https://doi.org/10.1016/j.ces.2013.04.035 \
+Boonkanokwong, V., Frank, R.P., Valliappan, P., Remy, B., Khinast, J.G., Glasser, B.J., 2018. Flow of granular materials in a bladed mixer: Effect of particle properties and process parameters on impeller torque and power consumption. Adv. Powder Technol. 29, 2733–2752. https://doi.org/10.1016/j.apt.2018.07.022 \
+Boonkanokwong, V., Remy, B., Khinast, J.G.G., Glasser, B.J.J., 2016. The effect of the number of impeller blades on granular flow in a bladed mixer. Powder Technol. 302, 333–349. https://doi.org/10.1016/j.powtec.2016.08.064 \
+Cai, R., Hou, Z., Zhao, Y., 2019. Numerical study on particle mixing in a double-screw conical mixer. Powder Technol. 352, 193–208. https://doi.org/10.1016/j.powtec.2019.04.065 \
+Chandratilleke, G.R., Dong, K.J., Shen, Y.S., 2018. DEM study of the effect of blade-support spokes on mixing performance in a ribbon mixer. Powder Technol. 326, 123–136. https://doi.org/10.1016/j.powtec.2017.12.055 \
+Cullen, P.J., Romañach, R.J., Abatzoglou, N., Rielly, C.D. (Eds.), 2015. Pharmaceutical blending and mixing. John Wiley & Sons, Ltd, Chichester, UK. https://doi.org/10.1002/9781118682692 \
+Cundall, P.A.A., Strack, O.D.L.D.L., 1979. A discrete numerical model for granular assemblies. Géotechnique 29, 47–65. https://doi.org/10.1680/geot.1979.29.1.47 \
+Ebrahimi, M., Yaraghi, A., Ein-Mozaffari, F., Lohi, A., 2018. The effect of impeller configurations on particle mixing in an agitated paddle mixer. Powder Technol. 332, 158–170. https://doi.org/10.1016/j.powtec.2018.03.061 \
+Ebrahimi, M., Yaraghi, A., Jadidi, B., Ein-Mozaffari, F., Lohi, A., 2020. Assessment of bi-disperse solid particles mixing in a horizontal paddle mixer through experiments and DEM. Powder Technol. 381, 129–140. https://doi.org/10.1016/j.powtec.2020.11.041 \
+Gao, W., Liu, L., Liao, Z., Chen, S., Zang, M., Tan, Y., 2019. Discrete element analysis of the particle mixing performance in a ribbon mixer with a double U-shaped vessel. Granul. Matter 21, 1–16. https://doi.org/10.1007/s10035-018-0864-4 \
+Harnby, N., Edwards, M.F., Nienow, A.W., 1985. Mixing in the process industries. Second edi. https://doi.org/10.1016/b978-0-7506-3760-2.x5020-3 \
+Hassanpour, A., Tan, H., Bayly, A., Gopalkrishnan, P., Ng, B., Ghadiri, M., 2011. Analysis of particle motion in a paddle mixer using discrete element method (DEM). Powder Technol. 206, 189–194. https://doi.org/10.1016/j.powtec.2010.07.025 \
+Jadidi, B., Ebrahimi, M., Ein-Mozaffari, F., Lohi, A., 2022. Mixing performance analysis of non-cohesive particles in a double paddle blender using DEM and experiments. Powder Technol. 117122. https://doi.org/10.1016/J.POWTEC.2022.117122 \
+Kingston, T.A., Geick, T.A., Robinson, T.R., Heindel, T.J., 2015. Characterizing 3D granular flow structures in a double screw mixer using X-ray particle tracking velocimetry. Powder Technol. 278, 211–222. https://doi.org/10.1016/j.powtec.2015.02.061 \
+Kloss, C., Goniva, C., 2011. LIGGGHTS - open source discrete element simulations of granular materials based on lammps, in: Supplemental Proceedings. John Wiley & Sons, Inc., Hoboken, NJ, USA, pp. 781–788. https://doi.org/10.1002/9781118062142.ch94 \
+Kretz, D., Callau-Monje, S., Hitschler, M., Hien, A., Raedle, M., Hesser, J., 2016. Discrete element method (DEM) simulation and validation of a screw feeder system. Powder Technol. 287, 131–138. https://doi.org/10.1016/j.powtec.2015.09.038 \
+Laurent, B.F.C., Cleary, P.W., 2012. Comparative study by PEPT and DEM for flow and mixing in a ploughshare mixer. Powder Technol. 228, 171–186. https://doi.org/10.1016/j.powtec.2012.05.013 \
+Muzzio, F.J., Llusa, M., Goodridge, C.L., Duong, N.H., Shen, E., 2008. Evaluating the mixing performance of a ribbon blender. Powder Technol. 186, 247–254. https://doi.org/10.1016/j.powtec.2007.12.013 \
+Norouzi, H.R., Zarghami, R., Sotudeh-Gharebagh, R., Mostoufi, N., 2016. Coupled CFD-DEM modeling: formulation, implementation and application to multiphase flows, Coupled CFD-DEM Modeling: Formulation, Implementation and Application to Multiphase Flows. wiley. https://doi.org/10.1002/9781119005315 \
+Paul, E.L., Atiemo-Obeng, V.A., Kresta, S.M., 2004. Handbook of industrial mixing: science and practice. John Wiley & Sons. \
+Qi, F., Heindel, T.J., Wright, M.M., 2017. Numerical study of particle mixing in a lab-scale screw mixer using the discrete element method. Powder Technol. 308, 334–345. https://doi.org/10.1016/J.POWTEC.2016.12.043 \
+Radl, S., Kalvoda, E., Glasser, B.J., Khinast, J.G., 2010. Mixing characteristics of wet granular matter in a bladed mixer. Powder Technol. 200, 171–189. https://doi.org/10.1016/j.powtec.2010.02.022 \
+Sakai, M., Shigeto, Y., Basinskas, G., Hosokawa, A., Fuji, M., 2015. Discrete element simulation for the evaluation of solid mixing in an industrial blender. Chem. Eng. J. 279, 821–839. https://doi.org/10.1016/j.cej.2015.04.130 \
+Sebastian Escotet-Espinoza, M., Foster, C.J., Ierapetritou, M., 2018. Discrete element modeling (DEM) for mixing of cohesive solids in rotating cylinders. Powder Technol. 335, 124–136. https://doi.org/10.1016/j.powtec.2018.05.024 \
+Soni, R.K., Mohanty, R., Mohanty, S., Mishra, B.K., 2016. Numerical analysis of mixing of particles in drum mixers using DEM. Adv. Powder Technol. 27, 531–540. https://doi.org/10.1016/j.apt.2016.01.016 \
+Yaraghi, A., Ebrahimi, M., Ein-Mozaffari, F., Lohi, A., 2018. Mixing assessment of non-cohesive particles in a paddle mixer through experiments and discrete element method (DEM). Adv. Powder Technol. 29, 2693–2706. https://doi.org/10.1016/j.apt.2018.07.019 \
+
+
+
+
+
+
+
